@@ -1,0 +1,44 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               Int         @id @default(autoincrement())
+  email            String      @unique
+  firstName        String
+  lastName         String?
+  subscriptionPlan String      @default("free")
+  role             String      @default("user")
+  workspaces       Workspace[]
+  createdAt        DateTime    @default(now())
+  updatedat        DateTime    @updatedAt
+  password         String
+}
+
+model Workspace {
+  id          Int           @id @default(autoincrement())
+  title       String
+  details     String?
+  userId      Int
+  user        User          @relation(fields: [userId], references: [id])
+  testimonial Testimonial[]
+  createdAt   DateTime      @default(now())
+  updatedat   DateTime      @updatedAt
+}
+
+model Testimonial {
+  id          Int       @id @default(autoincrement())
+  name        String
+  email       String
+  ratings     Float
+  review      String
+  workspaceId Int
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedat   DateTime  @updatedAt
+}
