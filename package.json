@@ -83,5 +83,8 @@
     "\"src/**/*.ts\" \"test/**/*.ts\"": [
       "npm run format && lint"
     ]
+  },
+  "prisma": {
+    "seed": "ts-node prisma\\seed.ts"
   }
 }
