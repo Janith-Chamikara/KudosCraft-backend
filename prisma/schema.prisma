@@ -10,6 +10,7 @@ generator client {
 model User {
   id               Int         @id @default(autoincrement())
   email            String      @unique
+  bio              String?
   firstName        String
   lastName         String?
   subscriptionPlan String      @default("free")
@@ -24,8 +25,8 @@ model Workspace {
   id          Int           @id @default(autoincrement())
   title       String
   details     String?
-  userId      Int
-  user        User          @relation(fields: [userId], references: [id])
+  ownerId     Int
+  owner       User          @relation(fields: [ownerId], references: [id])
   testimonial Testimonial[]
   createdAt   DateTime      @default(now())
   updatedat   DateTime      @updatedAt

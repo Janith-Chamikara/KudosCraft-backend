@@ -3,18 +3,21 @@ import {
   IsNotEmpty,
   IsEmail,
   MinLength,
-  Validate,
+  IsString,
+  IsOptional,
 } from 'class-validator';
-import { IsUserAlreadyExist } from '../../user/validators/is-user-already-exist.validator';
 
-export class SignUp {
-  @IsDefined()
+export class SignUpDto {
+  @IsString()
   @IsNotEmpty()
-  readonly name: string;
+  readonly firstName: string;
+
+  @IsString()
+  @IsOptional()
+  readonly lastName: string;
 
   @IsDefined()
   @IsEmail()
-  @Validate(IsUserAlreadyExist)
   readonly email: string;
 
   @IsDefined()
