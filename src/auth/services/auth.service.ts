@@ -8,16 +8,18 @@ import { SignUpDto } from '../dto/sign-up.dto';
 import { getHasedPassword } from 'src/utils/get-hashed-password';
 import { comparePassword } from 'src/utils/compare-password';
 import { User } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prismaService: PrismaService,
+    private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
   ) {}
 
-  async create(signUpDto: SignUpDto) {
+  async signUp(signUpDto: SignUpDto) {
     const { password, email } = signUpDto;
     const hashedPassword = await getHasedPassword(password);
     if (!hashedPassword) {
@@ -39,12 +41,15 @@ export class AuthService {
         'Error happend while creating your account.Try again later.',
       );
     }
-    return user;
+    return this.signIn(user);
   }
 
-  async login(user: Omit<User, 'password'>) {
+  async signIn(user: Omit<User, 'password'>) {
     const payload = { ...user };
-    return { access_token: this.jwtService.sign(payload) };
+    return {
+      access_token: this.jwtService.sign(payload),
+      refresh_token: this.generateRefreshToken(payload),
+    };
   }
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -69,5 +74,28 @@ export class AuthService {
       return result;
     }
     return null;
+  }
+
+  generateRefreshToken(payload: Omit<User, 'password'>) {
+    return this.jwtService.sign(payload, {
+      secret: this.configService.getOrThrow('REFRESH_TOKEN_SECRET'),
+      expiresIn: parseInt(
+        this.configService.getOrThrow('REFRESH_TOKEN_VALIDITY_DURATION_IN_SEC'),
+      ),
+    });
+  }
+
+  async refreshAccessToken(refreshToken: string) {
+    const decoded = this.jwtService.verify(refreshToken, {
+      secret: this.configService.getOrThrow('REFRESH_TOKEN_SECRET'), // Replace with your secret key
+    });
+    const user = await this.prismaService.user.findUnique(decoded.email);
+    if (!user) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+    const payload = { ...user };
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
   }
 }
