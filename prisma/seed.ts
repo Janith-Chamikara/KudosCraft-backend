@@ -11,7 +11,7 @@ async function main() {
       lastName: 'Doe',
       subscriptionPlan: 'premium',
       role: 'admin',
-      password: 'hashedpassword', // Make sure this is hashed in a real scenario
+      password: '453532423', // Make sure this is hashed in a real scenario
       workspaces: {
         create: [
           {
@@ -47,7 +47,7 @@ async function main() {
       lastName: 'Doe',
       subscriptionPlan: 'free',
       role: 'user',
-      password: 'hashedpassword', // Make sure this is hashed in a real scenario
+      password: '1233424', // Make sure this is hashed in a real scenario
       workspaces: {
         create: [
           {
