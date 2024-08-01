@@ -12,13 +12,13 @@ export class AuthController {
   @Public()
   @Post('sign-up')
   async signUp(@Body() signUpDto: SignUpDto) {
-    return this.authService.create(signUpDto);
+    return this.authService.signUp(signUpDto);
   }
 
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('sign-in')
   async signIn(@Body() signInDto: SignInDto, @Request() req: any) {
-    return this.authService.login(req.user);
+    return this.authService.signIn(req.user);
   }
 }
