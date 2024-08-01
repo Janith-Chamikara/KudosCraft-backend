@@ -1,62 +1,73 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SignUpDto } from '../dto/sign-up.dto';
 import { getHasedPassword } from 'src/utils/get-hashed-password';
 import { comparePassword } from 'src/utils/compare-password';
-import { SignInDto } from '../dto/sign-in.dto';
+import { User } from '@prisma/client';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async create(signUpDto: SignUpDto) {
     const { password, email } = signUpDto;
     const hashedPassword = await getHasedPassword(password);
     if (!hashedPassword) {
-      throw new HttpException(
-        'Cannot hash the given password',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new BadRequestException('Cannot hash the given password');
     }
     const isUserExists = await this.prismaService.user.findUnique({
       where: { email: email },
     });
     if (isUserExists) {
-      throw new HttpException(
+      throw new BadRequestException(
         'The email provided is already in use. Try again with another email',
-        HttpStatus.BAD_REQUEST,
       );
     }
     const user = await this.prismaService.user.create({
       data: { ...signUpDto, password: hashedPassword },
     });
     if (!user) {
-      throw new HttpException(
+      throw new BadRequestException(
         'Error happend while creating your account.Try again later.',
-        HttpStatus.BAD_REQUEST,
       );
     }
     return user;
   }
 
-  async login(signInDto: SignInDto) {
-    const { email, password } = signInDto;
+  async login(user: Omit<User, 'password'>) {
+    const payload = { ...user };
+    return { access_token: this.jwtService.sign(payload) };
+  }
+
+  async validateUser(email: string, password: string): Promise<any> {
     const isUserExists = await this.prismaService.user.findUnique({
-      where: { email: email },
+      where: {
+        email: email,
+      },
     });
-    if (!password || !email) {
-      throw new HttpException(
-        'Password and email are required.',
-        HttpStatus.BAD_REQUEST,
-      );
+    if (!isUserExists) {
+      throw new BadRequestException('Invalid email.');
     }
     const isPasswordCorrect = await comparePassword(
       password,
-      (isUserExists as SignInDto).password,
+      isUserExists.password,
     );
     if (!isPasswordCorrect) {
-      throw new HttpException('Invalid password!', HttpStatus.UNAUTHORIZED);
+      throw new UnauthorizedException('Invalid password');
     }
-    return isUserExists && isPasswordCorrect;
+    if (isUserExists && isPasswordCorrect) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...result } = isUserExists;
+      return result;
+    }
+    return null;
   }
 }
