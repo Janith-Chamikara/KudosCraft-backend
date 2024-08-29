@@ -14,38 +14,53 @@ generator client {
 }
 
 model User {
-  id               Int         @id @default(autoincrement())
-  email            String      @unique
-  bio              String?
-  firstName        String
-  lastName         String?
-  subscriptionPlan String      @default("free")
-  role             String      @default("user")
-  workspaces       Workspace[]
-  createdAt        DateTime    @default(now())
-  updatedat        DateTime    @updatedAt
-  password         String
+  id                String   @id @default(uuid())
+  email             String   @unique
+  bio               String?
+  firstName         String
+  usage             String   @default("personal")
+  campanyName       String?
+  numberOfEmployees Int?
+  lastName          String?
+  subscriptionPlan  String   @default("free")
+  role              String   @default("user")
+  createdAt         DateTime @default(now())
+  updatedat         DateTime @updatedAt
+  password          String
+
+  //relations
+  workspaces Workspace[]
+
+  @@index([email])
 }
 
 model Workspace {
-  id          Int           @id @default(autoincrement())
-  title       String
-  details     String?
-  ownerId     Int
-  owner       User          @relation(fields: [ownerId], references: [id])
+  id        String   @id @default(uuid())
+  title     String
+  details   String?
+  createdAt DateTime @default(now())
+  updatedat DateTime @updatedAt
+
+  //relations
+  ownerId     String
   testimonial Testimonial[]
-  createdAt   DateTime      @default(now())
-  updatedat   DateTime      @updatedAt
+  owner       User          @relation(fields: [ownerId], references: [id])
+
+  @@index([id])
 }
 
 model Testimonial {
-  id          Int       @id @default(autoincrement())
-  name        String
-  email       String
-  ratings     Float
-  review      String
-  workspaceId Int
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  ratings   Float
+  review    String
+  createdAt DateTime @default(now())
+  updatedat DateTime @updatedAt
+
+  //relations
+  workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedat   DateTime  @updatedAt
+
+  @@index([id])
 }
