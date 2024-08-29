@@ -5,11 +5,16 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SignUpDto } from '../dto/sign-up.dto';
-import { getHasedPassword } from 'src/utils/get-hashed-password';
-import { comparePassword } from 'src/utils/compare-password';
+import {
+  fifteenMinutesFromNow,
+  getHashedPassword,
+  thirtyDaysFromNow,
+} from 'src/utils/utils';
+import { comparePassword } from 'src/utils/utils';
 import { User } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { Request } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -21,7 +26,7 @@ export class AuthService {
 
   async signUp(signUpDto: SignUpDto) {
     const { password, email } = signUpDto;
-    const hashedPassword = await getHasedPassword(password);
+    const hashedPassword = await getHashedPassword(password);
     if (!hashedPassword) {
       throw new BadRequestException('Cannot hash the given password');
     }
@@ -38,7 +43,7 @@ export class AuthService {
     });
     if (!user) {
       throw new BadRequestException(
-        'Error happend while creating your account.Try again later.',
+        'Error occurred while creating your account.Try again later.',
       );
     }
     return this.signIn(user);
@@ -47,8 +52,12 @@ export class AuthService {
   async signIn(user: Omit<User, 'password'>) {
     const payload = { ...user };
     return {
-      access_token: this.jwtService.sign(payload),
-      refresh_token: this.generateRefreshToken(payload),
+      message: 'Success!',
+      user: payload,
+      accessToken: this.generateAccessToken(payload),
+      accessTokenExpiresIn: fifteenMinutesFromNow(),
+      refreshToken: this.generateRefreshToken(payload),
+      refreshTokenExpiresIn: thirtyDaysFromNow(),
     };
   }
 
@@ -79,23 +88,61 @@ export class AuthService {
   generateRefreshToken(payload: Omit<User, 'password'>) {
     return this.jwtService.sign(payload, {
       secret: this.configService.getOrThrow('REFRESH_TOKEN_SECRET'),
-      expiresIn: parseInt(
-        this.configService.getOrThrow('REFRESH_TOKEN_VALIDITY_DURATION_IN_SEC'),
-      ),
+      expiresIn: thirtyDaysFromNow(),
+    });
+  }
+  generateAccessToken(payload: Omit<User, 'password'>) {
+    return this.jwtService.sign(payload, {
+      secret: this.configService.getOrThrow('ACCESS_TOKEN_SECRET'),
+      expiresIn: fifteenMinutesFromNow(),
     });
   }
 
   async refreshAccessToken(refreshToken: string) {
+    console.log(refreshToken);
     const decoded = this.jwtService.verify(refreshToken, {
-      secret: this.configService.getOrThrow('REFRESH_TOKEN_SECRET'), // Replace with your secret key
+      secret: this.configService.getOrThrow('REFRESH_TOKEN_SECRET'),
     });
-    const user = await this.prismaService.user.findUnique(decoded.email);
+    const user = await this.prismaService.user.findUnique({
+      where: { id: decoded.id },
+    });
     if (!user) {
       throw new UnauthorizedException('Invalid refresh token');
     }
     const payload = { ...user };
     return {
-      access_token: this.jwtService.sign(payload),
+      accessToken: this.generateAccessToken(payload),
+      accessTokenExpiresIn: fifteenMinutesFromNow(),
+      refreshToken: this.generateAccessToken(payload),
+      refreshTokenExpiresIn: thirtyDaysFromNow(),
     };
+  }
+
+  extractRefreshToken(req: Request): string | null {
+    const cookieHeader = req.headers.cookie;
+    if (!cookieHeader) {
+      throw new UnauthorizedException('No cookies were found');
+    }
+
+    const cookies = this.parseCookies(cookieHeader);
+    const refreshToken = cookies['refreshToken'];
+
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token not found');
+    }
+
+    return refreshToken;
+  }
+
+  private parseCookies(cookieHeader: string): Record<string, string> {
+    const cookies: Record<string, string> = {};
+    cookieHeader.split(';').forEach((cookie) => {
+      const [name, ...rest] = cookie.split('=');
+      const value = decodeURIComponent(rest.join('=')).trim();
+      if (value !== 'undefined') {
+        cookies[name.trim()] = value;
+      }
+    });
+    return cookies;
   }
 }
