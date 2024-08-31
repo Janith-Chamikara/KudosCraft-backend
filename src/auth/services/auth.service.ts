@@ -99,7 +99,6 @@ export class AuthService {
   }
 
   async refreshAccessToken(refreshToken: string) {
-    console.log(refreshToken);
     const decoded = this.jwtService.verify(refreshToken, {
       secret: this.configService.getOrThrow('REFRESH_TOKEN_SECRET'),
     });

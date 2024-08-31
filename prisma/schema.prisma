@@ -18,10 +18,12 @@ model User {
   email             String   @unique
   bio               String?
   firstName         String
+  lastName          String
   usage             String   @default("personal")
-  campanyName       String?
+  companyName       String?
+  industryType      String?
   numberOfEmployees Int?
-  lastName          String?
+  job               String?
   subscriptionPlan  String   @default("free")
   role              String   @default("user")
   createdAt         DateTime @default(now())
