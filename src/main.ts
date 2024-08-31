@@ -10,6 +10,7 @@ dotenv.config({
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
+  app.enableCors();
   await app.listen(process.env.PORT as string);
   if (process.env.NODE_ENV === 'production') {
     console.log('Running in production mode');
