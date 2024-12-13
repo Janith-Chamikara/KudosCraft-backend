@@ -1,7 +1,6 @@
 datasource db {
-  provider  = "postgresql"
-  url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
-  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+  provider = "sqlite"
+  url      = env("DATABASE_URL") // uses connection pooling // uses a direct connection
 }
 
 generator client {
@@ -9,24 +8,24 @@ generator client {
 }
 
 model User {
-  id                String   @id @default(uuid())
-  email             String   @unique
-  bio               String?
-  firstName         String
-  lastName          String
-  usage             String   @default("personal")
-  companyName       String?
-  industryType      String?
-  numberOfEmployees Int?
-  job               String?
-  subscriptionPlan  String   @default("free")
-  role              String   @default("user")
-  createdAt         DateTime @default(now())
-  updatedat         DateTime @updatedAt
-  password          String
-
+  id                      String      @id @default(uuid())
+  email                   String      @unique
+  bio                     String?
+  firstName               String
+  lastName                String
+  usage                   String      @default("personal")
+  companyName             String?
+  industryType            String?
+  numberOfEmployees       Int?
+  job                     String?
+  subscriptionPlan        String      @default("free")
+  role                    String      @default("user")
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+  password                String
+  isInitialSetupCompleted Boolean     @default(false)
   //relations
-  workspaces Workspace[]
+  workspaces              Workspace[]
 
   @@index([email])
 }
@@ -36,7 +35,7 @@ model Workspace {
   title     String
   details   String?
   createdAt DateTime @default(now())
-  updatedat DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 
   //relations
   ownerId     String

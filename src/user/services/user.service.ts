@@ -30,6 +30,10 @@ export class UserService {
       details: workspaceDetails,
       ownerId: currentUser.id,
     });
+    currentUser.isInitialSetupCompleted = true;
+    await this.updateUserById(currentUser.id, {
+      isInitialSetupCompleted: true,
+    });
     return {
       workspace,
       message: 'Congratulations! Your account has been successfully set up.',
